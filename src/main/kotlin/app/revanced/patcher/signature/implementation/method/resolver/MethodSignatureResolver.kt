@@ -1,13 +1,14 @@
-package app.revanced.patcher.signature.resolver
+package app.revanced.patcher.signature.implementation.method.resolver
 
 import app.revanced.patcher.data.PatcherData
 import app.revanced.patcher.data.implementation.proxy
 import app.revanced.patcher.extensions.parametersEqual
 import app.revanced.patcher.proxy.ClassProxy
-import app.revanced.patcher.signature.MethodSignature
-import app.revanced.patcher.signature.PatternScanMethod
 import app.revanced.patcher.signature.PatternScanResult
 import app.revanced.patcher.signature.SignatureResolverResult
+import app.revanced.patcher.signature.implementation.method.MethodSignature
+import app.revanced.patcher.signature.implementation.method.annotation.FuzzyPatternScanMethod
+import app.revanced.patcher.signature.implementation.method.annotation.PatternScanMethod
 import org.jf.dexlib2.Opcode
 import org.jf.dexlib2.iface.ClassDef
 import org.jf.dexlib2.iface.Method
@@ -15,7 +16,7 @@ import org.jf.dexlib2.iface.instruction.Instruction
 import org.jf.dexlib2.iface.instruction.formats.Instruction21c
 import org.jf.dexlib2.iface.reference.StringReference
 
-internal class SignatureResolver(
+internal class MethodSignatureResolver(
     private val classes: List<ClassDef>,
     private val methodSignatures: Iterable<MethodSignature>
 ) {
@@ -107,9 +108,10 @@ internal class SignatureResolver(
             val count = instructions.count()
             val pattern = signature.opcodes!!
             val size = pattern.count()
-            val method = signature.metadata.patternScanMethod
-            val threshold = if (method is PatternScanMethod.Fuzzy)
-                method.threshold else 0
+
+            val method = signature::class.annotations.find { it is PatternScanMethod }
+
+            val threshold = if (method is FuzzyPatternScanMethod) method.threshold else 0
 
             for (instructionIndex in 0 until count) {
                 var patternIndex = 0
@@ -126,11 +128,9 @@ internal class SignatureResolver(
                     patternIndex-- // fix pattern offset
 
                     val result = PatternScanResult(instructionIndex, instructionIndex + patternIndex)
-                    if (method is PatternScanMethod.Fuzzy) {
-                        method.warnings = generateWarnings(
-                            signature, instructions, result
-                        )
-                    }
+
+                    result.warnings = generateWarnings(signature, instructions, result)
+
                     return result
                 }
             }
@@ -152,7 +152,7 @@ internal class SignatureResolver(
                     correctOpcode != patternOpcode
                 ) {
                     this.add(
-                        PatternScanMethod.Fuzzy.Warning(
+                        PatternScanResult.Warning(
                             correctOpcode, patternOpcode,
                             instructionIndex, patternIndex,
                         )

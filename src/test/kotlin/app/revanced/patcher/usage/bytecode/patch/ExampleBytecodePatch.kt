@@ -1,21 +1,21 @@
-package app.revanced.patcher.usage
+package app.revanced.patcher.usage.bytecode.patch
 
+import app.revanced.patcher.annotation.Description
+import app.revanced.patcher.annotation.Name
+import app.revanced.patcher.annotation.Version
 import app.revanced.patcher.data.implementation.BytecodeData
 import app.revanced.patcher.extensions.addInstructions
 import app.revanced.patcher.extensions.or
+import app.revanced.patcher.patch.annotations.Patch
 import app.revanced.patcher.patch.implementation.BytecodePatch
-import app.revanced.patcher.patch.implementation.metadata.PackageMetadata
-import app.revanced.patcher.patch.implementation.metadata.PatchMetadata
 import app.revanced.patcher.patch.implementation.misc.PatchResult
 import app.revanced.patcher.patch.implementation.misc.PatchResultSuccess
 import app.revanced.patcher.proxy.mutableTypes.MutableField.Companion.toMutable
 import app.revanced.patcher.proxy.mutableTypes.MutableMethod.Companion.toMutable
-import app.revanced.patcher.signature.MethodMetadata
-import app.revanced.patcher.signature.MethodSignature
-import app.revanced.patcher.signature.MethodSignatureMetadata
-import app.revanced.patcher.signature.PatternScanMethod
 import app.revanced.patcher.smali.toInstruction
 import app.revanced.patcher.smali.toInstructions
+import app.revanced.patcher.usage.bytecode.signatures.ExampleSignature
+import app.revanced.patcher.usage.resource.annotation.ExampleResourceCompatibility
 import com.google.common.collect.ImmutableList
 import org.jf.dexlib2.AccessFlags
 import org.jf.dexlib2.Format
@@ -32,45 +32,15 @@ import org.jf.dexlib2.immutable.reference.ImmutableStringReference
 import org.jf.dexlib2.immutable.value.ImmutableFieldEncodedValue
 import org.jf.dexlib2.util.Preconditions
 
-val packageMetadata = listOf(
-    PackageMetadata(
-        "com.example.examplePackage",
-        listOf("0.0.1", "0.0.2")
-    )
-)
-
+@Patch
+@Name("example-bytecode-patch")
+@Description("Example demonstration of a bytecode patch.")
+@ExampleResourceCompatibility
+@Version("0.0.1")
 class ExampleBytecodePatch : BytecodePatch(
-    PatchMetadata(
-        "example-patch",
-        "ReVanced example patch",
-        "A demonstrative patch to feature the core features of the ReVanced patcher",
-        packageMetadata,
-        "0.0.1"
-    ),
-    setOf(
-        MethodSignature(
-            MethodSignatureMetadata(
-                "Example signature",
-                MethodMetadata(
-                    "TestClass",
-                    "main",
-                ),
-                PatternScanMethod.Fuzzy(1),
-                packageMetadata,
-                "The main method of TestClass",
-                "1.0.0"
-            ),
-            "V",
-            AccessFlags.PUBLIC or AccessFlags.STATIC,
-            listOf("[L"),
-            listOf(
-                Opcode.SGET_OBJECT,
-                null,                 // Testing unknown opcodes.
-                Opcode.INVOKE_STATIC, // This is intentionally wrong to test the Fuzzy resolver.
-                Opcode.RETURN_VOID
-            ),
-            null
-        )
+
+    listOf(
+        ExampleSignature
     )
 ) {
     // This function will be executed by the patcher.

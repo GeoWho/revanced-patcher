@@ -1,15 +1,15 @@
 package app.revanced.patcher
 
+import app.revanced.patcher.annotation.Name
 import app.revanced.patcher.data.PatcherData
 import app.revanced.patcher.data.base.Data
 import app.revanced.patcher.data.implementation.findIndexed
 import app.revanced.patcher.patch.base.Patch
 import app.revanced.patcher.patch.implementation.BytecodePatch
 import app.revanced.patcher.patch.implementation.ResourcePatch
-import app.revanced.patcher.patch.implementation.metadata.PatchMetadata
 import app.revanced.patcher.patch.implementation.misc.PatchResultSuccess
-import app.revanced.patcher.signature.MethodSignature
-import app.revanced.patcher.signature.resolver.SignatureResolver
+import app.revanced.patcher.signature.implementation.method.MethodSignature
+import app.revanced.patcher.signature.implementation.method.resolver.MethodSignatureResolver
 import app.revanced.patcher.util.ListBackedSet
 import brut.androlib.Androlib
 import brut.androlib.meta.UsesFramework
@@ -159,7 +159,7 @@ class Patcher(
             return emptyList()
         }
 
-        SignatureResolver(patcherData.bytecodeData.classes.internalClasses, signatures).resolve(patcherData)
+        MethodSignatureResolver(patcherData.bytecodeData.classes.internalClasses, signatures).resolve(patcherData)
         signaturesResolved = true
         return signatures
     }
@@ -174,7 +174,7 @@ class Patcher(
     fun applyPatches(
         stopOnError: Boolean = false,
         callback: (String) -> Unit = {}
-    ): Map<PatchMetadata, Result<PatchResultSuccess>> {
+    ): Map<String, Result<PatchResultSuccess>> {
         if (!signaturesResolved) {
             resolveSignatures()
         }
@@ -183,7 +183,15 @@ class Patcher(
                 val resourcePatch = patch is ResourcePatch
                 if (!patchResources && resourcePatch) continue
 
-                callback(patch.metadata.shortName)
+                val annotations = patch::javaClass.annotations
+                if (!annotations.any { it is app.revanced.patcher.patch.annotations.Patch }) continue
+
+                val patchNameAnnotation = annotations.find { it is Name } as Name?
+
+                patchNameAnnotation?.let {
+                    callback(patchNameAnnotation.name)
+                }
+
                 val result: Result<PatchResultSuccess> = try {
                     val data = if (resourcePatch) {
                         patcherData.resourceData
@@ -201,7 +209,11 @@ class Patcher(
                 } catch (e: Exception) {
                     Result.failure(e)
                 }
-                this[patch.metadata] = result
+
+                patchNameAnnotation?.let {
+                    this[patchNameAnnotation.name] = result
+                }
+
                 if (result.isFailure && stopOnError) break
             }
         }

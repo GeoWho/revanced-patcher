@@ -1,21 +1,22 @@
-package app.revanced.patcher.usage
+package app.revanced.patcher.usage.resource.patch
 
+import app.revanced.patcher.annotation.Description
+import app.revanced.patcher.annotation.Name
+import app.revanced.patcher.annotation.Version
 import app.revanced.patcher.data.implementation.ResourceData
+import app.revanced.patcher.patch.annotations.Patch
 import app.revanced.patcher.patch.implementation.ResourcePatch
-import app.revanced.patcher.patch.implementation.metadata.PatchMetadata
 import app.revanced.patcher.patch.implementation.misc.PatchResult
 import app.revanced.patcher.patch.implementation.misc.PatchResultSuccess
+import app.revanced.patcher.usage.resource.annotation.ExampleResourceCompatibility
 import org.w3c.dom.Element
 
-class ExampleResourcePatch : ResourcePatch(
-    PatchMetadata(
-        "example-patch",
-        "Example Resource Patch",
-        "Example demonstration of a resource patch.",
-        packageMetadata,
-        "0.0.1"
-    )
-) {
+@Patch
+@Name("example-resource-patch")
+@Description("Example demonstration of a resource patch.")
+@ExampleResourceCompatibility
+@Version("0.0.1")
+class ExampleResourcePatch : ResourcePatch() {
     override fun execute(data: ResourceData): PatchResult {
         val editor = data.getXmlEditor("AndroidManifest.xml")
 
